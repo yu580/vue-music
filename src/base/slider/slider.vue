@@ -94,7 +94,6 @@ export default {
           speed: 400
         }
       });
-      var _this = this;
       // better-scroll在滚动完成以后会派发一个scrollEnd事件 getCurrentPage()获取滚动后当前页的信息
       this.slider.on("scrollEnd", () => {
         let currentPage = this.slider.getCurrentPage().pageX;

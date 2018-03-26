@@ -1,24 +1,41 @@
 <template>
   <div class="recommend" ref="recommend">
-    <div v-if="recommends.length" class="slider-wrapper" ref="sliderWrapper">
-      <slider>
-        <div v-for="item in recommends" :key="item.id">
-          <a :href="item.linkUrl">
-            <img class="needsclick" :src="item.picUrl">
-          </a>
-        </div>
-      </slider>
+    <div class="recommend-content">
+      <div v-if="recommends.length" class="slider-wrapper" ref="sliderWrapper">
+        <slider>
+          <div v-for="item in recommends" :key="item.id">
+            <a :href="item.linkUrl">
+              <img class="needsclick" :src="item.picUrl">
+            </a>
+          </div>
+        </slider>
+      </div>
+      <div class="recommend-list">
+        <h1 class="list-title">热门歌单推荐</h1>
+        <ul>
+          <li :key="item.dissid" v-for="item in discList" class="item">
+            <div class="icon">
+              <img width="60" height="60" :src="item.imgurl">
+            </div>
+            <div class="text">
+              <h2 class="name" v-html="item.creator.name"></h2>
+              <p class="desc" v-html="item.dissname"></p>
+            </div>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
 <script>
 import Slider from "base/slider/slider";
-import { getRecommend } from "api/recommend";
+import { getRecommend, getDiscList } from "api/recommend";
 import { ERR_OK } from "api/config";
 export default {
   data() {
     return {
-      recommends: []
+      recommends: [],
+      discList: []
     };
   },
   components: {
@@ -26,12 +43,20 @@ export default {
   },
   created() {
     this._getRecommend();
+    this._getDiscList();
   },
   methods: {
     _getRecommend() {
       getRecommend().then(res => {
         if (res.code === ERR_OK) {
           this.recommends = res.data.slider;
+        }
+      });
+    },
+    _getDiscList() {
+      getDiscList().then(res => {
+        if (res.code === ERR_OK) {
+          this.discList = res.data.list;
         }
       });
     }
