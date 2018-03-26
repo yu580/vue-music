@@ -21,7 +21,7 @@ export default {
       recommends: []
     };
   },
-  componnets: {
+  components: {
     Slider
   },
   created() {
