@@ -66,15 +66,14 @@ export default {
         let val = map[key];
         if (val.title.match(/[a-zA-Z]/)) {
           re.push(val);
-        } else if (val.title == HOT_NAME) {
+        } else if (val.title === HOT_NAME) {
           hot.push(val);
         }
       }
       re.sort((a, b) => {
         return a.title.charCodeAt(0) - b.title.charCodeAt(0);
       });
-      console.log(hot);
-      console.log(re);
+      return hot.concat(re)
     }
   }
 };
