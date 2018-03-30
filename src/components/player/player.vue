@@ -1,19 +1,181 @@
 <template>
   <div class="player" v-show="playlist.length>0">
+    <transition name="normal"
+                @enter="enter"
+                @after-enter="afterEnter"
+                @leave="leave"
+                @after-leave="afterLeave"
+    >
       <div class="normal-player" v-show="fullScreen">
-          播放器
+        <div class="background">
+          <img width="100%" height="100%" :src="currentSong.image">
+        </div>
+        <div class="top">
+          <div class="back" @click="back">
+            <i class="icon-back"></i>
+          </div>
+          <h1 class="title" v-html="currentSong.name"></h1>
+          <h2 class="subtitle" v-html="currentSong.singer"></h2>
+        </div>
+        <div class="middle">
+          <div class="middle-l" ref="middleL">
+            <div class="cd-wrapper" ref="cdWrapper">
+              <div class="cd" >
+                <img class="image" :src="currentSong.image">
+              </div>
+            </div>
+            <div class="playing-lyric-wrapper">
+            </div>
+          </div>
+        </div>
+        <div class="bottom">
+          <div class="dot-wrapper">
+            <!-- <span class="dot" :class="{"active":currentShow==="cd"}"></span>
+            <span class="dot" :class="{"active":currentShow==="lyric"}"></span> -->
+          </div>
+          <div class="progress-wrapper">
+            <span class="time time-l"></span>
+            <div class="progress-bar-wrapper">
+            </div>
+            <span class="time time-r"></span>
+          </div>
+          <div class="operators">
+            <div class="icon i-left">
+              <i ></i>
+            </div>
+            <div class="icon i-left">
+              <i  class="icon-prev"></i>
+            </div>
+            <div class="icon i-center">
+              <i  @click="togglePlaying" :class="playIcon"></i>
+            </div>
+            <div class="icon i-right">
+              <i  class="icon-next"></i>
+            </div>
+            <div class="icon i-right">
+              <i  class="icon"></i>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="mini-player" v-show="!fullScreen"></div>
+    </transition>
+    <transition name="mini">
+      <div class="mini-player" v-show="!fullScreen" @click="open">
+        <div class="icon">
+          <img width="40" height="40" :src="currentSong.image">
+        </div>
+        <div class="text">
+          <h2 class="name" v-html="currentSong.name"></h2>
+          <p class="desc" v-html="currentSong.singer"></p>
+        </div>
+        <div class="control">
+        </div>
+        <div class="control">
+          <i class="icon-playlist"></i>
+        </div>
+      </div>
+    </transition>
+    <audio ref="audio" :src="currentSong.url"></audio>
   </div>
 </template>
 <script>
-import { mapGetters } from "vuex";
+import { mapGetters, mapActions, mapMutations } from "vuex";
+import animations from "create-keyframe-animation";
+import { prefixStyle } from "common/js/dom";
+
+const transform = prefixStyle("transform");
+// const transitionDuration = prefixStyle("transitionDuration");
 export default {
   computed: {
-    ...mapGetters([
-      "fullScreen",
-      "playlist"
-    ])
+    playIcon() {
+      return this.playing ? "icon-pause" : "icon-play";
+    },
+    ...mapGetters(["fullScreen", "playlist", "currentSong", "playing"])
+  },
+  methods: {
+    back() {
+      this.setFullScreen(false);
+    },
+    open() {
+      this.setFullScreen(true);
+    },
+    enter(el, done) {
+      const { x, y, scale } = this._getPosAndScale();
+      // 定义动画
+      let animation = {
+        0: {
+          transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
+        },
+        60: {
+          transform: "translate3d(0,0,0) scale(1.1)"
+        },
+        100: {
+          transform: "translate3d(0,0,0) scale(1)"
+        }
+      };
+      // 注册动画
+      animations.registerAnimation({
+        name: "move",
+        animation,
+        presets: {
+          duration: 400,
+          easing: "linear"
+        }
+      });
+      // 运行动画
+      animations.runAnimation(this.$refs.cdWrapper, "move", done);
+    },
+    afterEnter() {
+      // 清除动画
+      animations.unregisterAnimation("move");
+      this.$refs.cdWrapper.style.animation = "";
+    },
+    leave(el, done) {
+      this.$refs.cdWrapper.style.transition = "all 0.4s";
+      const { x, y, scale } = this._getPosAndScale();
+      this.$refs.cdWrapper.style.transform = `translate3d(${x}px,${y}px,0) scale(${scale})`;
+      this.$refs.cdWrapper.addEventListener("transitionend", done);
+    },
+    afterLeave() {
+      this.$refs.cdWrapper.style.transition = "";
+      this.$refs.cdWrapper.style[transform] = "";
+    },
+    togglePlaying() {
+      this.setPlayingState(!this.playing);
+    },
+    _getPosAndScale() {
+      const targetWidth = 40;
+      const paddingLeft = 40;
+      const paddingBottom = 30;
+      const paddingTop = 80;
+      const width = window.innerWidth * 0.8;
+      const scale = targetWidth / width;
+      const x = -(window.innerWidth / 2 - paddingLeft);
+      const y = window.innerHeight - paddingTop - width / 2 - paddingBottom;
+      return {
+        x,
+        y,
+        scale
+      };
+    },
+    ...mapMutations({
+      setFullScreen: "SET_FULL_SCREEN",
+      setPlayingState: "SET_PLAYING_STATE"
+    }),
+    ...mapActions(["savePlayHistory"])
+  },
+  watch: {
+    currentSong() {
+      this.$nextTick(() => {
+        this.$refs.audio.play();
+      });
+    },
+    playing(newPlaying) {
+      const audio = this.$refs.audio;
+      this.$nextTick(() => {
+        newPlaying ? audio.play() : audio.pause();
+      });
+    }
   }
 };
 </script>
