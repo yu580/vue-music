@@ -1,12 +1,15 @@
 <template>
   <div class="singer">
-    歌手页面
+    <list-view @select="selectItem" :data="singers"></list-view>
+    <router-view></router-view>
   </div>
 </template>
 <script>
+import listView from "base/listview/listview";
 import { getSingerList } from "api/singer";
 import { ERR_OK } from "api/config";
 import Singer from "common/js/singer";
+import { mapMutations } from "vuex";
 
 const HOT_NAME = "热门";
 const HOT_SINGER_LEN = 10;
@@ -17,15 +20,22 @@ export default {
       singers: []
     };
   },
+  components: {
+    listView
+  },
   mounted() {},
   created() {
     this._getSingerList();
   },
   methods: {
+    selectItem(singer) {
+      this.$router.push({ path: `/singer/${singer.id}` });
+      this.setSinger(singer);
+    },
     _getSingerList() {
       getSingerList().then(res => {
         if (res.code === ERR_OK) {
-          console.log(this._normalizeSinger(res.data.list));
+          this.singers = this._normalizeSinger(res.data.list);
         }
       });
     },
@@ -41,7 +51,7 @@ export default {
           map.hot.items.push(
             new Singer({
               id: item.Fsinger_mid,
-              name: item.Fother_name
+              name: item.Fsinger_name
             })
           );
         }
@@ -55,7 +65,7 @@ export default {
         map[key].items.push(
           new Singer({
             id: item.Fsinger_mid,
-            name: item.Fother_name
+            name: item.Fsinger_name
           })
         );
       });
@@ -73,10 +83,19 @@ export default {
       re.sort((a, b) => {
         return a.title.charCodeAt(0) - b.title.charCodeAt(0);
       });
-      return hot.concat(re)
-    }
+      return hot.concat(re);
+    },
+    ...mapMutations({
+      setSinger: "SET_SINGER"
+    })
   }
 };
 </script>
 <style lang="stylus" scoped>
+.singer {
+  position: fixed;
+  top: 88px;
+  bottom: 0;
+  width: 100%;
+}
 </style>
