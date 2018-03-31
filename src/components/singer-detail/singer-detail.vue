@@ -35,7 +35,6 @@ export default {
         this.$router.push("/singer");
         return;
       }
-
       getSingerDetail(this.singer.id).then(res => {
         let list = res.data.list;
         this.songs = this._normalizeSongs(list);
@@ -46,6 +45,7 @@ export default {
       list.forEach(item => {
         let { musicData } = item;
         if (musicData.songid && musicData.albummid) {
+          // 获取播放地址的key
           getSongAddressKey(musicData.songmid).then(res => {
             if (res.code === ERR_OK) {
               let songkey = res.data.items[0].vkey;
