@@ -90,7 +90,13 @@ export default {
     playIcon() {
       return this.playing ? "icon-pause" : "icon-play";
     },
-    ...mapGetters(["fullScreen", "playlist", "currentSong", "playing"])
+    ...mapGetters([
+      "fullScreen",
+      "playlist",
+      "currentSong",
+      "playing",
+      "currentIndex"
+    ])
   },
   methods: {
     back() {
@@ -166,9 +172,10 @@ export default {
   },
   watch: {
     currentSong() {
-      this.$nextTick(() => {
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => {
         this.$refs.audio.play();
-      });
+      }, 1000);
     },
     playing(newPlaying) {
       const audio = this.$refs.audio;
