@@ -42,7 +42,7 @@
           </div>
           <div class="operators">
             <div class="icon i-left">
-              <i ></i>
+              <i :class="iconMode" @click="changeMode"></i>
             </div>
             <div class="icon i-left">
               <i  class="icon-prev" @click="prev"></i>
@@ -86,8 +86,8 @@
 import { mapGetters, mapMutations, mapActions } from "vuex";
 import animations from "create-keyframe-animation";
 import { prefixStyle } from "common/js/dom";
-import { getSongAddressKey } from "api/singer";
-import { ERR_OK } from "api/config";
+import { playMode } from "common/js/config";
+// import { ERR_OK } from "api/config";
 import ProgressBar from "base/progress-bar/progress-bar";
 import ProgressCircle from "base/progress-circle/progress-circle";
 
@@ -111,6 +111,11 @@ export default {
     miniIcon() {
       return this.playing ? "icon-pause-mini" : "icon-play-mini";
     },
+    iconMode() {
+      return this.mode === playMode.random
+        ? "icon-random"
+        : this.mode === playMode.loop ? "icon-loop" : "icon-sequence";
+    },
     percent() {
       return this.currentTime / this.currentSong.duration;
     },
@@ -119,7 +124,8 @@ export default {
       "playlist",
       "currentSong",
       "playing",
-      "currentIndex"
+      "currentIndex",
+      "mode"
     ])
   },
   methods: {
@@ -183,36 +189,28 @@ export default {
         this.togglePlaying();
       }
     },
-    _cloneArray(arr) {
-      let re = [];
-      arr.forEach(item => {
-        let obj = {};
-        for (var k in item) {
-          obj[k] = item[k];
-        }
-        re.push(obj);
-      });
-      return re;
+    getLyric() {
+      this.currentSong
+        .getLyric()
+        .then(lyric => {
+          console.log(lyric);
+          // if (this.currentSong.lyric !== lyric) {
+          //   return
+          // }
+          // this.currentLyric = new Lyric(lyric, this.handleLyric)
+          // if (this.playing) {
+          //   this.currentLyric.play()
+          // }
+        })
+        .catch(() => {
+          // this.currentLyric = null
+          // this.playingLyric = ''
+          // this.currentLineNum = 0
+        });
     },
-    // 获取播放地址的key
-    _getSongAddressKey(songList, index) {
-      let song = songList[index];
-      getSongAddressKey(song.mid).then(res => {
-        if (res.code === ERR_OK) {
-          let songkey = res.data.items[0].vkey;
-          // 复制一份歌曲列表，不然下次做url复制是 vuex会报错
-          let arr = this._cloneArray(this.playlist);
-          arr[index].url = `${arr[index].url}&vkey=${songkey}`;
-          this.selectPlay({
-            list: arr,
-            index: index
-          });
-          if (!this.playing) {
-            this.togglePlaying();
-          }
-          this.songReady = false;
-        }
-      });
+    changeMode() {
+      let mode = (this.mode + 1) % 3;
+      this.setPlayMode(mode);
     },
     next() {
       if (!this.songReady) {
@@ -223,8 +221,13 @@ export default {
       if (index === this.playlist.length) {
         index = 0;
       }
-      // this.setCurrentIndex(index);
-      this._getSongAddressKey(this.playlist, index);
+      this.playlist[index].getSongAddressKey().then(res => {
+        this.setCurrentIndex(index);
+        if (!this.playing) {
+          this.togglePlaying();
+        }
+        this.songReady = false;
+      });
     },
     prev() {
       if (!this.songReady) {
@@ -235,12 +238,13 @@ export default {
       if (index === -1) {
         index = this.playlist.length - 1;
       }
-      // this.setCurrentIndex(index);
-      this._getSongAddressKey(this.playlist, index);
-      // if (!this.playing) {
-      //   this.togglePlaying();
-      // }
-      // this.songReady = false;
+      this.playlist[index].getSongAddressKey().then(res => {
+        this.setCurrentIndex(index);
+        if (!this.playing) {
+          this.togglePlaying();
+        }
+        this.songReady = false;
+      });
     },
     ready() {
       this.songReady = true;
@@ -285,7 +289,8 @@ export default {
     ...mapMutations({
       setFullScreen: "SET_FULL_SCREEN",
       setPlayingState: "SET_PLAYING_STATE",
-      setCurrentIndex: "SET_CURRENT_INDEX"
+      setCurrentIndex: "SET_CURRENT_INDEX",
+      setPlayMode: "SET_PLAY_MODE"
     }),
     ...mapActions(["selectPlay"])
   },
@@ -294,6 +299,7 @@ export default {
       clearTimeout(this.timer);
       this.timer = setTimeout(() => {
         this.$refs.audio.play();
+        this.getLyric();
       }, 1000);
     },
     playing(newPlaying) {

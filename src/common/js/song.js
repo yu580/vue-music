@@ -1,6 +1,7 @@
-// import { getLyric } from 'api/song'
-// import { ERR_OK } from 'api/config'
-// import { Base64 } from 'js-base64'
+import { getLyric } from "api/song"
+import { getSongAddressKey } from "api/singer"
+import { ERR_OK } from "api/config"
+import { Base64 } from "js-base64"
 
 export default class Song {
   constructor({ id, mid, singer, name, album, duration, image, url }) {
@@ -11,25 +12,43 @@ export default class Song {
     this.album = album
     this.duration = duration
     this.image = image
-    this.url = url
+    // this.url = url
   }
+  // 获取播放地址的key
+  getSongAddressKey() {
+    if (this.url) {
+      return Promise.resolve(this.url)
+    }
 
-  // getLyric() {
-  //   if (this.lyric) {
-  //     return Promise.resolve(this.lyric)
-  //   }
+    return new Promise((resolve, reject) => {
+      getSongAddressKey(this.mid).then((res) => {
+        if (res.code === ERR_OK) {
+          let songkey = res.data.items[0].vkey;
+          this.url = `http://dl.stream.qqmusic.qq.com/C400${this.mid}.m4a?vkey=${songkey}&guid=74834180&uin=0&fromtag=66`
+          resolve(this.url)
+        } else {
+          reject(new Error("no url"))
+        }
+      })
+    })
+  }
+  getLyric() {
+    if (this.lyric) {
+      return Promise.resolve(this.lyric)
+    }
 
-  //   return new Promise((resolve, reject) => {
-  //     getLyric(this.mid).then((res) => {
-  //       if (res.retcode === ERR_OK) {
-  //         this.lyric = Base64.decode(res.lyric)
-  //         resolve(this.lyric)
-  //       } else {
-  //         reject('no lyric')
-  //       }
-  //     })
-  //   })
-  // }
+    return new Promise((resolve, reject) => {
+      getLyric(this.mid).then((res) => {
+        if (res.retcode === ERR_OK) {
+          this.lyric = Base64.decode(res.lyric)
+          // this.lyric = res.lyric
+          resolve(this.lyric)
+        } else {
+          reject(new Error("no lyric"))
+        }
+      })
+    })
+  }
 }
 
 export function createSong(musicData) {
@@ -40,8 +59,7 @@ export function createSong(musicData) {
     name: musicData.songname,
     album: musicData.albumname,
     duration: musicData.interval,
-    image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`,
-    url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?guid=74834180&uin=0&fromtag=66`
+    image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`
     // url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?vkey=${vkey}&guid=74834180&uin=0&fromtag=66`
   })
 }
