@@ -29,9 +29,10 @@
 import Scroll from "base/scroll/scroll";
 import Loading from "base/loading/loading";
 import SongList from "base/song-list/song-list";
-// import { getSongAddressKey } from "api/singer";
+import { getSongAddressKey } from "api/singer";
 import { prefixStyle } from "common/js/dom";
 import { mapActions } from "vuex";
+import { ERR_OK } from "api/config";
 
 const RESERVED_HEIGHT = 40;
 const transform = prefixStyle("transform");
@@ -84,10 +85,30 @@ export default {
     back() {
       this.$router.back();
     },
+    _cloneArray(arr) {
+      let re = [];
+      arr.forEach(item => {
+        let obj = {};
+        for (var k in item) {
+          obj[k] = item[k];
+        }
+        re.push(obj);
+      });
+      return re;
+    },
     selectItem(song, index) {
-      this.selectPlay({
-        list: this.songs,
-        index: index
+      // 获取播放地址的key
+      getSongAddressKey(song.mid).then(res => {
+        if (res.code === ERR_OK) {
+          let songkey = res.data.items[0].vkey;
+          // 复制一份歌曲列表，不然下次做url复制是 vuex会报错
+          let arr = this._cloneArray(this.songs);
+          arr[index].url = `${arr[index].url}&vkey=${songkey}`;
+          this.selectPlay({
+            list: arr,
+            index: index
+          });
+        }
       });
     },
     ...mapActions(["selectPlay"])

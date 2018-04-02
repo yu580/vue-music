@@ -32,7 +32,7 @@ module.exports = {
       : config.dev.assetsPublicPath
   },
   resolve: {
-    extensions: ['.js', '.vue', '.json'],
+    extensions: ['.js', '.vue', '.json'],// 给路劲添加后缀
     alias: {
       '@': resolve('src'),
       'common': resolve('src/common'),

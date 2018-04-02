@@ -20,7 +20,7 @@
         <div class="middle">
           <div class="middle-l" ref="middleL">
             <div class="cd-wrapper" ref="cdWrapper">
-              <div class="cd" >
+              <div class="cd" :class="cdCls">
                 <img class="image" :src="currentSong.image">
               </div>
             </div>
@@ -34,23 +34,24 @@
             <span class="dot" :class="{"active":currentShow==="lyric"}"></span> -->
           </div>
           <div class="progress-wrapper">
-            <span class="time time-l"></span>
+            <span class="time time-l">{{format(currentTime)}}</span>
             <div class="progress-bar-wrapper">
+              <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
             </div>
-            <span class="time time-r"></span>
+            <span class="time time-r">{{format(currentSong.duration)}}</span>
           </div>
           <div class="operators">
             <div class="icon i-left">
               <i ></i>
             </div>
             <div class="icon i-left">
-              <i  class="icon-prev"></i>
+              <i  class="icon-prev" @click="prev"></i>
             </div>
             <div class="icon i-center">
               <i  @click="togglePlaying" :class="playIcon"></i>
             </div>
             <div class="icon i-right">
-              <i  class="icon-next"></i>
+              <i  class="icon-next" @click="next"></i>
             </div>
             <div class="icon i-right">
               <i  class="icon"></i>
@@ -62,33 +63,56 @@
     <transition name="mini">
       <div class="mini-player" v-show="!fullScreen" @click="open">
         <div class="icon">
-          <img width="40" height="40" :src="currentSong.image">
+          <img :class="cdCls" width="40" height="40" :src="currentSong.image">
         </div>
         <div class="text">
           <h2 class="name" v-html="currentSong.name"></h2>
           <p class="desc" v-html="currentSong.singer"></p>
         </div>
         <div class="control">
+          <progress-circle :radius="radius" :percent="percent">
+            <i @click.stop="togglePlaying" class="icon-mini" :class="miniIcon"></i>
+          </progress-circle>
         </div>
         <div class="control">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
-    <audio ref="audio" :src="currentSong.url"></audio>
+    <audio ref="audio" :src="currentSong.url" @play="ready" @error="error" @timeupdate="updateTime"></audio>
   </div>
 </template>
 <script>
-import { mapGetters, mapActions, mapMutations } from "vuex";
+import { mapGetters, mapMutations, mapActions } from "vuex";
 import animations from "create-keyframe-animation";
 import { prefixStyle } from "common/js/dom";
+import { getSongAddressKey } from "api/singer";
+import { ERR_OK } from "api/config";
+import ProgressBar from "base/progress-bar/progress-bar";
+import ProgressCircle from "base/progress-circle/progress-circle";
 
 const transform = prefixStyle("transform");
 // const transitionDuration = prefixStyle("transitionDuration");
 export default {
+  data() {
+    return {
+      songReady: false,
+      currentTime: 0,
+      radius: 32
+    };
+  },
   computed: {
+    cdCls() {
+      return this.playing ? "play" : "play pause";
+    },
     playIcon() {
       return this.playing ? "icon-pause" : "icon-play";
+    },
+    miniIcon() {
+      return this.playing ? "icon-pause-mini" : "icon-play-mini";
+    },
+    percent() {
+      return this.currentTime / this.currentSong.duration;
     },
     ...mapGetters([
       "fullScreen",
@@ -147,7 +171,92 @@ export default {
       this.$refs.cdWrapper.style[transform] = "";
     },
     togglePlaying() {
+      if (!this.songReady) {
+        return;
+      }
       this.setPlayingState(!this.playing);
+    },
+    onProgressBarChange(percent) {
+      const currentTime = this.currentSong.duration * percent;
+      this.$refs.audio.currentTime = currentTime;
+      if (!this.playing) {
+        this.togglePlaying();
+      }
+    },
+    _cloneArray(arr) {
+      let re = [];
+      arr.forEach(item => {
+        let obj = {};
+        for (var k in item) {
+          obj[k] = item[k];
+        }
+        re.push(obj);
+      });
+      return re;
+    },
+    // 获取播放地址的key
+    _getSongAddressKey(songList, index) {
+      let song = songList[index];
+      getSongAddressKey(song.mid).then(res => {
+        if (res.code === ERR_OK) {
+          let songkey = res.data.items[0].vkey;
+          // 复制一份歌曲列表，不然下次做url复制是 vuex会报错
+          let arr = this._cloneArray(this.playlist);
+          arr[index].url = `${arr[index].url}&vkey=${songkey}`;
+          this.selectPlay({
+            list: arr,
+            index: index
+          });
+          if (!this.playing) {
+            this.togglePlaying();
+          }
+          this.songReady = false;
+        }
+      });
+    },
+    next() {
+      if (!this.songReady) {
+        return;
+      }
+
+      let index = this.currentIndex + 1;
+      if (index === this.playlist.length) {
+        index = 0;
+      }
+      // this.setCurrentIndex(index);
+      this._getSongAddressKey(this.playlist, index);
+    },
+    prev() {
+      if (!this.songReady) {
+        return;
+      }
+
+      let index = this.currentIndex - 1;
+      if (index === -1) {
+        index = this.playlist.length - 1;
+      }
+      // this.setCurrentIndex(index);
+      this._getSongAddressKey(this.playlist, index);
+      // if (!this.playing) {
+      //   this.togglePlaying();
+      // }
+      // this.songReady = false;
+    },
+    ready() {
+      this.songReady = true;
+    },
+    updateTime(e) {
+      this.currentTime = e.target.currentTime;
+    },
+    // 格式化时间
+    format(interval) {
+      interval = interval | 0;
+      const minute = (interval / 60) | 0;
+      const second = this._pad(interval % 60);
+      return `${minute}:${second}`;
+    },
+    error() {
+      this.songReady = true;
     },
     _getPosAndScale() {
       const targetWidth = 40;
@@ -164,11 +273,21 @@ export default {
         scale
       };
     },
+    // 补0函数 n是需要补到的长度
+    _pad(num, n = 2) {
+      let len = num.toString().length;
+      while (len < n) {
+        num = "0" + num;
+        len++;
+      }
+      return num;
+    },
     ...mapMutations({
       setFullScreen: "SET_FULL_SCREEN",
-      setPlayingState: "SET_PLAYING_STATE"
+      setPlayingState: "SET_PLAYING_STATE",
+      setCurrentIndex: "SET_CURRENT_INDEX"
     }),
-    ...mapActions(["savePlayHistory"])
+    ...mapActions(["selectPlay"])
   },
   watch: {
     currentSong() {
@@ -183,6 +302,10 @@ export default {
         newPlaying ? audio.play() : audio.pause();
       });
     }
+  },
+  components: {
+    ProgressBar,
+    ProgressCircle
   }
 };
 </script>

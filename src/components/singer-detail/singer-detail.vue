@@ -6,9 +6,9 @@
 <script>
 import MusicList from "components/music-list/music-list";
 import { mapGetters } from "vuex";
-import { getSingerDetail, getSongAddressKey } from "api/singer";
+import { getSingerDetail } from "api/singer";
 import { createSong } from "common/js/song";
-import { ERR_OK } from "api/config";
+// import { ERR_OK } from "api/config";
 
 export default {
   computed: {
@@ -45,13 +45,7 @@ export default {
       list.forEach(item => {
         let { musicData } = item;
         if (musicData.songid && musicData.albummid) {
-          // 获取播放地址的key
-          getSongAddressKey(musicData.songmid).then(res => {
-            if (res.code === ERR_OK) {
-              let songkey = res.data.items[0].vkey;
-              ret.push(createSong(musicData, songkey));
-            }
-          });
+          ret.push(createSong(musicData));
         }
       });
       return ret;
