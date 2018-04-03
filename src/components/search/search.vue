@@ -14,21 +14,22 @@
               </li>
             </ul>
           </div>
-          <!-- <div class="search-history" v-show="searchHistory.length">
+          <div class="search-history" v-show="searchHistory.length">
             <h1 class="title">
               <span class="text">搜索历史</span>
-              <span @click="showConfirm" class="clear">
+              <span class="clear"  @click="showConfirm">
                 <i class="icon-clear"></i>
               </span>
             </h1>
             <search-list @delete="deleteSearchHistory" @select="addQuery" :searches="searchHistory"></search-list>
-          </div> -->
+          </div>
         </div>
       </scroll>
     </div>
     <div class="search-result" v-show="query" ref="searchResult">
-      <suggest @listScroll="blurInput" ref="suggest" :query="query"></suggest>
+      <suggest @listScroll="blurInput" ref="suggest" @select="saveSearch" :query="query"></suggest>
     </div>
+    <confirm ref="confirm" @confirm="clearSearchHistory" text="是否清空所有搜索历史" confirmBtnText="清空"></confirm>
     <router-view></router-view>
   </div>
 </template>
@@ -36,11 +37,16 @@
 import SearchBox from "base/search-box/search-box";
 import Scroll from "base/scroll/scroll";
 import Suggest from "components/suggest/suggest";
+import SearchList from "base/search-list/search-list";
+import Confirm from "base/confirm/confirm";
+import { mapActions } from "vuex";
+import { playlistMixin, searchMixin } from "common/js/mixin";
 
 import { getHotKey } from "api/search";
 import { ERR_OK } from "api/config";
 
 export default {
+  mixins: [playlistMixin, searchMixin],
   data() {
     return {
       hotKey: [],
@@ -49,21 +55,24 @@ export default {
   },
   computed: {
     shortcut() {
-      return this.hotKey;
+      return this.hotKey.concat(this.searchHistory);
     }
   },
   created() {
     this._getHotKey();
   },
   methods: {
-    addQuery(query) {
-      this.$refs.searchBox.setQuery(query);
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? "60px" : "";
+
+      this.$refs.searchResult.style.bottom = bottom;
+      this.$refs.suggest.refresh();
+
+      this.$refs.shortcutWrapper.style.bottom = bottom;
+      this.$refs.shortcut.refresh();
     },
-    onQueryChange(query) {
-      this.query = query;
-    },
-    blurInput() {
-      this.$refs.searchBox.blur();
+    showConfirm() {
+      this.$refs.confirm.show();
     },
     _getHotKey() {
       getHotKey().then(res => {
@@ -71,12 +80,15 @@ export default {
           this.hotKey = res.data.hotkey.slice(0, 10);
         }
       });
-    }
+    },
+    ...mapActions(["clearSearchHistory"])
   },
   components: {
     SearchBox,
     Scroll,
-    Suggest
+    Suggest,
+    SearchList,
+    Confirm
   }
 };
 </script>
