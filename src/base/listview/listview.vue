@@ -96,6 +96,9 @@ export default {
       let shortcutIndex = parseInt(this.touch.index, 10) + delta;
       this._scrollTo(shortcutIndex);
     },
+    refresh() {
+      this.$refs.listview.refresh();
+    },
     scroll(pos) {
       this.scrollY = pos.y;
     },

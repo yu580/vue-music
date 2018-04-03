@@ -1,11 +1,11 @@
-import {mapGetters, mapMutations, mapActions} from 'vuex'
-import {playMode} from 'common/js/config'
-import {shuffle} from 'common/js/util'
+import {mapGetters, mapMutations, mapActions} from "vuex"
+import {playMode} from "common/js/config"
+import {shuffle} from "common/js/util"
 
 export const playlistMixin = {
   computed: {
     ...mapGetters([
-      'playlist'
+      "playlist"
     ])
   },
   mounted() {
@@ -21,7 +21,7 @@ export const playlistMixin = {
   },
   methods: {
     handlePlaylist() {
-      throw new Error('component must implement handlePlaylist method')
+      throw new Error("component must implement handlePlaylist method")
     }
   }
 }
@@ -29,14 +29,14 @@ export const playlistMixin = {
 export const playerMixin = {
   computed: {
     iconMode() {
-      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
+      return this.mode === playMode.sequence ? "icon-sequence" : this.mode === playMode.loop ? "icon-loop" : "icon-random"
     },
     ...mapGetters([
-      'sequenceList',
-      'playlist',
-      'currentSong',
-      'mode',
-      'favoriteList'
+      "sequenceList",
+      "playlist",
+      "currentSong",
+      "mode",
+      "favoriteList"
     ])
   },
   methods: {
@@ -67,9 +67,9 @@ export const playerMixin = {
     },
     getFavoriteIcon(song) {
       if (this.isFavorite(song)) {
-        return 'icon-favorite'
+        return "icon-favorite"
       }
-      return 'icon-not-favorite'
+      return "icon-not-favorite"
     },
     isFavorite(song) {
       const index = this.favoriteList.findIndex((item) => {
@@ -78,14 +78,14 @@ export const playerMixin = {
       return index > -1
     },
     ...mapMutations({
-      setPlayMode: 'SET_PLAY_MODE',
-      setPlaylist: 'SET_PLAYLIST',
-      setCurrentIndex: 'SET_CURRENT_INDEX',
-      setPlayingState: 'SET_PLAYING_STATE'
+      setPlayMode: "SET_PLAY_MODE",
+      setPlaylist: "SET_PLAYLIST",
+      setCurrentIndex: "SET_CURRENT_INDEX",
+      setPlayingState: "SET_PLAYING_STATE"
     }),
     ...mapActions([
-      'saveFavoriteList',
-      'deleteFavoriteList'
+      "saveFavoriteList",
+      "deleteFavoriteList"
     ])
   }
 }
@@ -93,13 +93,13 @@ export const playerMixin = {
 export const searchMixin = {
   data() {
     return {
-      query: '',
+      query: "",
       refreshDelay: 120
     }
   },
   computed: {
     ...mapGetters([
-      'searchHistory'
+      "searchHistory"
     ])
   },
   methods: {
@@ -116,8 +116,8 @@ export const searchMixin = {
       this.saveSearchHistory(this.query)
     },
     ...mapActions([
-      'saveSearchHistory',
-      'deleteSearchHistory'
+      "saveSearchHistory",
+      "deleteSearchHistory"
     ])
   }
 }

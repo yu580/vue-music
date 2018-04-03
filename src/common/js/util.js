@@ -12,7 +12,7 @@ export function shuffle(arr) {
   }
   return _arr
 }
-
+// 节流函数调用一个函数 返回一个函数 称之为函数柯里化
 export function debounce(func, delay) {
   let timer
 
