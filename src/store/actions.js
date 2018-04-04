@@ -94,16 +94,17 @@ export const deleteSong = function ({ commit, state }, song) {
   if (currentIndex > pIndex || currentIndex === playlist.length) {
     currentIndex--
   }
+  playlist[currentIndex].getSongAddressKey().then(res => {
+    commit(types.SET_PLAYLIST, playlist)
+    commit(types.SET_SEQUENCE_LIST, sequenceList)
+    commit(types.SET_CURRENT_INDEX, currentIndex)
 
-  commit(types.SET_PLAYLIST, playlist)
-  commit(types.SET_SEQUENCE_LIST, sequenceList)
-  commit(types.SET_CURRENT_INDEX, currentIndex)
-
-  if (!playlist.length) {
-    commit(types.SET_PLAYING_STATE, false)
-  } else {
-    commit(types.SET_PLAYING_STATE, true)
-  }
+    if (!playlist.length) {
+      commit(types.SET_PLAYING_STATE, false)
+    } else {
+      commit(types.SET_PLAYING_STATE, true)
+    }
+  })
 }
 
 export const deleteSongList = function ({ commit }) {

@@ -12,6 +12,9 @@ Vue.config.productionTip = false
 Vue.use(VueLazyload, {
   loading: require("common/image/default.png")
 })
+/* eslint-disable no-unused-vars */
+// import vConsole from 'vconsole'
+
 // fastclick注册到body上   推荐写法
 fastclick.attach(document.body)
 /* eslint-disable no-new */

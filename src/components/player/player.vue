@@ -67,7 +67,7 @@
               <i  class="icon-next" @click="next"></i>
             </div>
             <div class="icon i-right">
-              <i  class="icon"></i>
+              <i @click="toggleFavorite(currentSong)" class="icon" :class="getFavoriteIcon(currentSong)"></i>
             </div>
           </div>
         </div>
@@ -87,11 +87,12 @@
             <i @click.stop="togglePlaying" class="icon-mini" :class="miniIcon"></i>
           </progress-circle>
         </div>
-        <div class="control">
+        <div class="control"  @click.stop="showPlaylist">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
+    <playlist ref="playlist"></playlist>
     <audio ref="audio" :src="currentSong.url" @play="ready" @error="error" @timeupdate="updateTime" @ended="end"></audio>
   </div>
 </template>
@@ -101,12 +102,11 @@ import animations from "create-keyframe-animation";
 import { prefixStyle } from "common/js/dom";
 import { playMode } from "common/js/config";
 import Lyric from "lyric-parser";
-// import { ERR_OK } from "api/config";
 import ProgressBar from "base/progress-bar/progress-bar";
 import ProgressCircle from "base/progress-circle/progress-circle";
 import Scroll from "base/scroll/scroll";
-import { shuffle } from "common/js/util";
 import {playerMixin} from "common/js/mixin";
+import Playlist from "components/playlist/playlist";
 
 const transform = prefixStyle("transform");
 const transitionDuration = prefixStyle("transitionDuration");
@@ -133,22 +133,13 @@ export default {
     miniIcon() {
       return this.playing ? "icon-pause-mini" : "icon-play-mini";
     },
-    iconMode() {
-      return this.mode === playMode.random
-        ? "icon-random"
-        : this.mode === playMode.loop ? "icon-loop" : "icon-sequence";
-    },
     percent() {
       return this.currentTime / this.currentSong.duration;
     },
     ...mapGetters([
       "fullScreen",
-      "playlist",
-      "currentSong",
       "playing",
-      "currentIndex",
-      "mode",
-      "sequenceList"
+      "currentIndex"
     ])
   },
   created() {
@@ -265,6 +256,9 @@ export default {
       }
       this.playingLyric = txt;
     },
+    showPlaylist() {
+      this.$refs.playlist.show()
+    },
     middleTouchStart(e) {
       this.touch.initiated = true;
       // 用来判断是否是一次移动
@@ -329,24 +323,6 @@ export default {
       this.$refs.middleL.style[transitionDuration] = `${time}ms`;
       this.touch.initiated = false;
     },
-    changeMode() {
-      let mode = (this.mode + 1) % 3;
-      this.setPlayMode(mode);
-      let list = null
-      if (mode === playMode.random) {
-        list = shuffle(this.sequenceList)
-      } else {
-        list = this.sequenceList
-      }
-      this.resetCurrentIndex(list)
-      this.setPlayList(list)
-    },
-    resetCurrentIndex(list) {
-      let index = list.findIndex((item) => {
-        return item.id === this.currentSong.id
-      })
-      this.setCurrentIndex(index)
-    },
     next() {
       if (!this.songReady) {
         return;
@@ -391,6 +367,7 @@ export default {
     },
     ready() {
       this.songReady = true;
+      this.savePlayHistory(this.currentSong)
     },
     updateTime(e) {
       this.currentTime = e.target.currentTime;
@@ -431,12 +408,9 @@ export default {
     },
     ...mapMutations({
       setFullScreen: "SET_FULL_SCREEN",
-      setPlayingState: "SET_PLAYING_STATE",
-      setCurrentIndex: "SET_CURRENT_INDEX",
-      setPlayMode: "SET_PLAY_MODE",
-      setPlayList: "SET_PLAYLIST"
+      setCurrentIndex: "SET_CURRENT_INDEX"
     }),
-    ...mapActions(["selectPlay"])
+    ...mapActions(["savePlayHistory"])
   },
   watch: {
     currentSong(newSong, oldSong) {
@@ -469,7 +443,8 @@ export default {
   components: {
     ProgressBar,
     ProgressCircle,
-    Scroll
+    Scroll,
+    Playlist
   }
 };
 </script>
